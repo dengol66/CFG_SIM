@@ -1,0 +1,203 @@
+warning: LF will be replaced by CRLF in pom.xml.
+The file will have its original line endings in your working directory.
+warning: LF will be replaced by CRLF in src/main/java/sselab/CFG.java.
+The file will have its original line endings in your working directory.
+warning: LF will be replaced by CRLF in src/main/java/sselab/CFGSim.java.
+The file will have its original line endings in your working directory.
+warning: LF will be replaced by CRLF in src/main/java/sselab/CFG_Node.java.
+The file will have its original line endings in your working directory.
+warning: LF will be replaced by CRLF in src/main/java/sselab/Main.java.
+The file will have its original line endings in your working directory.
+warning: LF will be replaced by CRLF in src/main/java/sselab/String_Parser.java.
+The file will have its original line endings in your working directory.
+warning: LF will be replaced by CRLF in src/test/java/sselab/AppTest.java.
+The file will have its original line endings in your working directory.
+warning: LF will be replaced by CRLF in target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst.
+The file will have its original line endings in your working directory.
+[1mdiff --git a/src/main/java/sselab/CFGSim.java b/src/main/java/sselab/CFGSim.java[m
+[1mindex 4c6f4e3..30f05fb 100644[m
+[1m--- a/src/main/java/sselab/CFGSim.java[m
+[1m+++ b/src/main/java/sselab/CFGSim.java[m
+[36m@@ -1,17 +1,33 @@[m
+ package sselab;[m
+[32m+[m[32mimport java.lang.reflect.Array;[m
+ import java.util.ArrayList;[m
+[32m+[m[32mimport java.util.Arrays;[m
+ [m
+ public class CFGSim {[m
+ 	int[][] costMatrix;[m
+ 	static int INF_ = 987654321;[m
+ 	private CFG A, B;[m
+ 	int n,m;[m
+[32m+[m
+[32m+[m	[32mint[] lx,ly,EGx_y,EGy_x,S,T,slackY,slack_x;[m
+[32m+[m	[32mint idx;[m
+[32m+[m	[32mint match_cnt;[m
+[32m+[m	[32mint s_front,s_rear;[m
+ 	[m
+ 	public CFGSim(CFG a,CFG b) {[m
+ 		this.A = a;[m
+ 		this.B = b;[m
+ 		n = A.getsize();[m
+ 		m = B.getsize();[m
+[32m+[m		[32mlx = new int[n+m+1];[m
+[32m+[m		[32mly = new int[n+m+1];[m
+[32m+[m		[32mEGx_y = new int[n+m+1];[m
+[32m+[m		[32mEGy_x = new int[n+m+1];[m
+[32m+[m		[32mS = new int[n+m+1];[m[41m [m
+[32m+[m		[32mT = new int[n+m+1];[m
+[32m+[m		[32mslackY = new int[n+m+1];[m
+[32m+[m		[32mslack_x = new int[n+m+1];[m
+[32m+[m		[32midx = 0; match_cnt = 0;[m[41m [m
+ 	}[m
+ 	[m
+ 	int get_intersection(ArrayList<Integer> a,ArrayList<Integer> b) {[m
+[36m@@ -59,52 +75,109 @@[m [mpublic class CFGSim {[m
+ 		//fourth section - dummy node[m
+ 	}[m
+ 	[m
+[31m-	ArrayList<Integer> getNeighbor(ArrayList<Integer> st,int[] eq_graph){[m
+[31m-		ArrayList<Integer> ret = new ArrayList<Integer>();[m
+[31m-		for(int i=0;i<st.size();i++) {[m
+[31m-			ret.add(eq_graph[st.get(i)]);[m
+[32m+[m	[32mvoid init_S_T(){[m
+[32m+[m		[32ms_front = 1; s_rear=1;[m
+[32m+[m		[32mArrays.fill(T,0);[m
+[32m+[m		[32mfor(int i=1;i<=n+m;i++){[m
+[32m+[m			[32mif(EGx_y[i] == -1){[m
+[32m+[m				[32mS[s_rear++] = i; break;[m
+[32m+[m			[32m}[m
+ 		}[m
+[31m-		return ret;[m
+ 	}[m
+[31m-[m
+[31m-	void hungrian_alg() {[m
+[31m-		ArrayList<Integer> St = new ArrayList<Integer>(); //X[m
+[31m-		ArrayList<Integer> T = new ArrayList<Integer>(); //Y[m
+[31m-		[m
+[31m-		ArrayList<Integer> free_Vertex = new ArrayList<Integer>(); // free vertexes[m
+[32m+[m[41m	[m
+[32m+[m	[32mvoid slack_update(int x){[m
+[32m+[m		[32mint delta;[m
+[32m+[m		[32mfor(int i=1;i<=n+m;i++){[m
+[32m+[m			[32mdelta = lx[x] + ly[i] - costMatrix[x][i];[m
+[32m+[m			[32mif(T[i] == 0 && slackY[i] > delta){[m
+[32m+[m				[32mslackY[i] = delta;[m
+[32m+[m				[32mslack_x[i] = x;[m
+[32m+[m			[32m}[m
+[32m+[m		[32m}[m
+[32m+[m	[32m}[m
+[32m+[m[41m	[m
+[32m+[m	[32mint find_in_slack(){[m
+[32m+[m		[32mint min_ = INF_;[m
+[32m+[m		[32mint idx = -1;[m
+[32m+[m		[32mfor(int i=1;i<=n+m;i++){[m
+[32m+[m			[32mif(T[i] == 0 && slackY[i] >= 0 && min_ > slackY[i]){[m
+[32m+[m				[32mmin_ = slackY[i];[m
+[32m+[m				[32midx = i;[m
+[32m+[m			[32m}[m
+[32m+[m		[32m}[m
+[32m+[m		[32mreturn idx;[m
+[32m+[m	[32m}[m
+[32m+[m[41m	[m
+[32m+[m	[32mvoid update_labels(int delta){[m
+[32m+[m		[32mfor(int i=1;i<=n+m;i++){[m
+[32m+[m			[32mif(S[i] > 0){[m
+[32m+[m				[32mlx[i] -= delta;[m
+[32m+[m			[32m}[m
+[32m+[m			[32mif(T[i] > 0){[m
+[32m+[m				[32mly[i] += delta;[m
+[32m+[m				[32mslackY[i] -= delta;[m
+[32m+[m			[32m}[m
+[32m+[m		[32m}[m
+[32m+[m	[32m}[m
+[32m+[m[41m	[m
+[32m+[m	[32mvoid reconstruct_matching(int x,int y){[m
+[32m+[m		[32mif(EGx_y[x] != -1){[m
+[32m+[m			[32mint t = EGx_y[x];[m
+[32m+[m			[32mEGx_y[x] = y;[m
+[32m+[m			[32mEGy_x[y] = x;[m
+[32m+[m			[32mreconstruct_matching(slack_x[t],t);[m
+[32m+[m		[32m}[m
+[32m+[m		[32melse{[m
+[32m+[m			[32mEGx_y[x] =y;[m
+[32m+[m			[32mEGy_x[y] = x;[m
+[32m+[m		[32m}[m
+[32m+[m	[32m}[m
+[32m+[m[41m	[m
+[32m+[m	[32mvoid augment(){[m
+[32m+[m		[32mint x=0,y=0;[m
+[32m+[m		[32mArrays.fill(slackY,INF_);[m
+[32m+[m		[32mArrays.fill(slack_x,-1);[m
+ 		[m
+[31m-		int[] lx = new int[n+m+1];  [m
+[31m-		int[] ly = new int[n+m+1];[m
+[31m-		int[] Matching = new int[n+m+1]; //Y -> X[m
+[31m-		int[] EqualityGraph = new int[n+m+1]; //X -> Y[m
+[32m+[m		[32mwhile(s_front < s_rear){[m
+[32m+[m			[32mslack_update(S[s_front++]);[m
+[32m+[m[41m			[m
+[32m+[m			[32my = find_in_slack();[m
+[32m+[m			[32mx = slack_x[y];[m
+[32m+[m[41m			[m
+[32m+[m			[32mif(EGy_x[y] == -1) break;[m
+[32m+[m[41m			[m
+[32m+[m			[32mupdate_labels(slackY[y]);[m
+[32m+[m[41m			[m
+[32m+[m			[32mS[s_rear++] = EGy_x[y];[m
+[32m+[m			[32mT[y] = 1;[m
+[32m+[m		[32m}[m
+[32m+[m		[32mreconstruct_matching(x,y);[m
+[32m+[m		[32mmatch_cnt++;[m
+[32m+[m	[32m}[m
+[32m+[m[41m	[m
+[32m+[m	[32mvoid hungrian_alg() {[m
+ 		//initial step[m
+[32m+[m		[32mArrays.fill(lx,INF_);[m
+[32m+[m		[32mArrays.fill(ly,0);[m
+[32m+[m		[32mArrays.fill(EGx_y,-1);[m
+[32m+[m		[32mArrays.fill(EGy_x,-1);[m
+ 		for(int i=1;i<=n+m;i++) {[m
+[31m-			ly[i] = 0;[m
+[31m-			int min_ = 1;[m
+[31m-			for(int j=1;j<=n+m;j++) {[m
+[31m-				if(costMatrix[i][j] < costMatrix[i][min_]) {[m
+[31m-					min_ = j;[m
+[32m+[m			[32mfor(int j=1;j<=n+m;j++){[m
+[32m+[m				[32mif(lx[i] < costMatrix[i][j]){[m
+[32m+[m					[32mlx[i] = costMatrix[i][j];[m
+[32m+[m					[32midx = j;[m
+ 				}[m
+ 			}[m
+[31m-			Matching[min_] = i;[m
+[31m-			EqualityGraph[i] = min_;[m
+[31m-			lx[i] = costMatrix[i][min_];[m
+[31m-			free_Vertex.add(i);[m
+[31m-		}[m
+[31m-		for(int i=1;i<=n+m;i++) {[m
+[31m-			if(Matching[i] >=1) {[m
+[31m-				free_Vertex.remove(Matching[i]);[m
+[32m+[m			[32mif(EGy_x[idx] == -1){[m
+[32m+[m				[32mEGx_y[i] = idx;[m
+[32m+[m				[32mEGy_x[idx] = i;[m
+[32m+[m				[32mmatch_cnt++;[m
+ 			}[m
+ 		}[m
+[31m-		ArrayList<Integer> Neighbor;[m
+[31m-		while(!free_Vertex.isEmpty()) {[m
+[31m-			int s = free_Vertex.get(0);[m
+[31m-			free_Vertex.remove(0);[m
+[31m-			St.add(s);[m
+[31m-			Neighbor = getNeighbor(St,EqualityGraph);[m
+[31m-			// check Nl(s) == T [m
+[31m-			// if Nl(s) != T choose y = Nl(s) - T[m
+[31m-			// else calculate al [m
+[32m+[m[41m		[m
+[32m+[m		[32mwhile(match_cnt <= n+m){[m
+[32m+[m			[32minit_S_T();[m
+[32m+[m			[32maugment();[m
+ 		}[m
+ 	}[m
+[31m-}[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
