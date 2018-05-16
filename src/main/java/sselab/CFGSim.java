@@ -1,17 +1,34 @@
 package sselab;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class CFGSim {
 	int[][] costMatrix;
-	static int INF_ = 987654321;
+	static int INF_ = 1000;
 	private CFG A, B;
 	int n,m;
+
+	int[] lx,ly,EGx_y,EGy_x,S,slackY,slack_x;
+	boolean[] T;
+	int idx;
+	int match_cnt;
+	int s_front,s_rear;
 	
 	public CFGSim(CFG a,CFG b) {
 		this.A = a;
 		this.B = b;
 		n = A.getsize();
 		m = B.getsize();
+		lx = new int[n+m+1];
+		ly = new int[n+m+1];
+		EGx_y = new int[n+m+1];
+		EGy_x = new int[n+m+1];
+		S = new int[n+m+1]; 
+		T = new boolean[n+m+1];
+		slackY = new int[n+m+1];
+		slack_x = new int[n+m+1];
+		idx = 0; match_cnt = 0; 
 	}
 	
 	int get_intersection(ArrayList<Integer> a,ArrayList<Integer> b) {
@@ -57,54 +74,132 @@ public class CFGSim {
 		}
 		
 		//fourth section - dummy node
+		for(int i=1;i<=n+m;i++) {
+			for(int j=1;j<=n+m;j++) {
+				System.out.printf("%d ", costMatrix[i][j]);
+			}
+			System.out.println();
+		}
 	}
 	
-	ArrayList<Integer> getNeighbor(ArrayList<Integer> st,int[] eq_graph){
-		ArrayList<Integer> ret = new ArrayList<Integer>();
-		for(int i=0;i<st.size();i++) {
-			ret.add(eq_graph[st.get(i)]);
+	void init_S_T(){
+		s_front = 1; s_rear=1;
+		Arrays.fill(T,false);
+		for(int i=1;i<=n+m;i++){
+			if(EGx_y[i] == -1){
+				S[s_rear++] = i; break;
+			}
 		}
-		return ret;
 	}
-
-	void hungrian_alg() {
-		ArrayList<Integer> St = new ArrayList<Integer>(); //X
-		ArrayList<Integer> T = new ArrayList<Integer>(); //Y
-		
-		ArrayList<Integer> free_Vertex = new ArrayList<Integer>(); // free vertexes
-		
-		int[] lx = new int[n+m+1];  
-		int[] ly = new int[n+m+1];
-		int[] Matching = new int[n+m+1]; //Y -> X
-		int[] EqualityGraph = new int[n+m+1]; //X -> Y
-		//initial step
+	
+	void slack_update(int x){
+		int delta;
+		for(int i=1;i<=n+m;i++){
+			delta = lx[x] + ly[i] - costMatrix[x][i];
+			if(!T[i] && slackY[i] > delta){
+				slackY[i] = delta;
+				slack_x[i] = x;
+			}
+		}
+	}
+	
+	int find_in_slack(){
+		int min_ = INF_+1;
+		int idx = -1;
+		for(int i=1;i<=n+m;i++){
+			if(!T[i] && slackY[i] >= 0 && min_ > slackY[i]){
+				min_ = slackY[i];
+				idx = i;
+			}
+		}
+		return idx;
+	}
+	
+	void update_labels(int delta){
+		for(int i=1;i<=n+m;i++){
+			if(S[i] > 0){
+				lx[i] -= delta;
+			}
+			if(T[i]){
+				ly[i] += delta;
+			}
+		}
 		for(int i=1;i<=n+m;i++) {
-			ly[i] = 0;
-			int min_ = 1;
-			for(int j=1;j<=n+m;j++) {
-				if(costMatrix[i][j] < costMatrix[i][min_]) {
-					min_ = j;
+			if(!T[i]) {
+				slackY[i] -= delta;
+			}
+		}
+	}
+	
+	void reconstruct_matching(int x,int y){
+		if(EGx_y[x] != -1){
+			int t = EGx_y[x];
+			EGx_y[x] = y;
+			EGy_x[y] = x;
+			reconstruct_matching(slack_x[t],t);
+		}
+		else{
+			EGx_y[x] = y;
+			EGy_x[y] = x;
+		}
+	}
+	
+	void augment(){
+		int x=1,y=1;
+		Arrays.fill(slackY,INF_);
+		Arrays.fill(slack_x,-1);
+		
+		while(s_front < s_rear){
+			slack_update(S[s_front++]);
+			
+			y = find_in_slack();
+			x = slack_x[y];
+			
+			if(EGy_x[y] == -1) break;
+			
+			update_labels(slackY[y]);
+			
+			S[s_rear++] = EGy_x[y];
+			T[y] = true;
+		}
+		reconstruct_matching(x,y);
+		match_cnt++;
+	}
+	
+	void hungrian_alg() {
+		//initial step
+		Arrays.fill(EGx_y,-1);
+		Arrays.fill(EGy_x,-1);
+		for(int i=1;i<=n+m;i++) {
+			lx[i] = INF_+1;
+			for(int j=1;j<=n+m;j++){
+				if(lx[i] > costMatrix[i][j]){
+					lx[i] = costMatrix[i][j];
+					idx = j;
 				}
 			}
-			Matching[min_] = i;
-			EqualityGraph[i] = min_;
-			lx[i] = costMatrix[i][min_];
-			free_Vertex.add(i);
-		}
-		for(int i=1;i<=n+m;i++) {
-			if(Matching[i] >=1) {
-				free_Vertex.remove(Matching[i]);
+			if(EGy_x[idx] == -1){
+				EGx_y[i] = idx;
+				EGy_x[idx] = i;
+				match_cnt++;
 			}
 		}
-		ArrayList<Integer> Neighbor;
-		while(!free_Vertex.isEmpty()) {
-			int s = free_Vertex.get(0);
-			free_Vertex.remove(0);
-			St.add(s);
-			Neighbor = getNeighbor(St,EqualityGraph);
-			// check Nl(s) == T 
-			// if Nl(s) != T choose y = Nl(s) - T
-			// else calculate al 
+
+		for(int i=1;i<=n+m;i++) {
+			System.out.printf("%d ", EGx_y[i]);
 		}
+		System.out.println();
+		while(match_cnt < n+m){
+			init_S_T();
+			augment();
+			for(int i=1;i<=n+m;i++) {
+				System.out.printf("%d ", EGx_y[i]);
+			}
+			System.out.println();
+		}
+		for(int i=1;i<=n+m;i++) {
+			System.out.printf("%d ", costMatrix[i][EGx_y[i]]);
+		}
+		System.out.println();
 	}
 }
